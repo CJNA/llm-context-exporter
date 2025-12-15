@@ -5,7 +5,7 @@ This module defines the abstract base class that all platform formatters must im
 """
 
 from abc import ABC, abstractmethod
-from typing import Union, List, Dict
+from typing import Union, List
 from ..core.models import UniversalContextPack, GeminiOutput, OllamaOutput
 
 
