@@ -21,18 +21,6 @@ The LLM Context Exporter addresses vendor lock-in concerns by making personal co
 
 ### How It Works
 
-```mermaid
-graph LR
-    A[ChatGPT Export] --> B[Parser]
-    B --> C[Context Extractor]
-    C --> D[Universal Context Pack]
-    D --> E[Filter & Selection]
-    E --> F[Gemini Formatter]
-    E --> G[Ollama Formatter]
-    F --> H[Gemini Saved Info]
-    G --> I[Ollama Modelfile]
-```
-
 1. **Parse**: Reads official ChatGPT export files (ZIP or JSON)
 2. **Extract**: Identifies projects, preferences, and technical context
 3. **Filter**: Allows selective inclusion/exclusion of content
@@ -228,7 +216,7 @@ The architecture supports adding new platforms through adapter interfaces:
 - **Adding Source Platforms**: Implement `PlatformParser` interface
 - **Adding Target Platforms**: Implement `PlatformFormatter` interface
 
-See the [Design Document](.kiro/specs/llm-context-exporter/design.md) for detailed adapter interface documentation.
+See the [Design Document](.kiro/specs/llm-context-exporter/design.md#extensibility-points) for detailed adapter interface documentation.
 
 ## Privacy & Security
 
@@ -378,4 +366,3 @@ See the [Design Document](.kiro/specs/llm-context-exporter/design.md#extensibili
 - Context compression and summarization
 - Automatic sync/update scheduling
 - Multi-user/team context sharing
-
