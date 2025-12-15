@@ -1,0 +1,166 @@
+# Prometheus alerting rules for LLM Context Exporter
+
+groups:
+  - name: llm-context-exporter-alerts
+    rules:
+      # Application availability
+      - alert: ApplicationDown
+        expr: up{job="llm-context-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "LLM Context Exporter application is down"
+          description: "The LLM Context Exporter application has been down for more than 1 minute."
+
+      # Database connectivity
+      - alert: DatabaseDown
+        expr: up{job="postgres-exporter"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "PostgreSQL database has been down for more than 2 minutes."
+
+      # Redis connectivity
+      - alert: RedisDown
+        expr: up{job="redis-exporter"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+          description: "Redis has been down for more than 2 minutes."
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(flask_http_request_exceptions_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} errors per second over the last 5 minutes."
+
+      # High response time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(flask_http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }} seconds."
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is above 90% ({{ $value | humanizePercentage }})."
+
+      # High disk usage
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes{mountpoint="/"} - node_filesystem_free_bytes{mountpoint="/"}) / node_filesystem_size_bytes{mountpoint="/"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High disk usage"
+          description: "Disk usage is above 85% ({{ $value | humanizePercentage }})."
+
+      # SSL certificate expiration
+      - alert: SSLCertificateExpiringSoon
+        expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 30
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate expires in {{ $value | humanizeDuration }}."
+
+      # Failed payment processing
+      - alert: HighPaymentFailureRate
+        expr: rate(stripe_payment_failures_total[10m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High payment failure rate"
+          description: "Payment failure rate is {{ $value }} failures per second."
+
+      # Upload processing failures
+      - alert: HighUploadFailureRate
+        expr: rate(upload_processing_failures_total[10m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High upload processing failure rate"
+          description: "Upload processing failure rate is {{ $value }} failures per second."
+
+      # Database connection pool exhaustion
+      - alert: DatabaseConnectionPoolExhaustion
+        expr: postgres_connections_active / postgres_connections_max > 0.8
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Database connection pool is {{ $value | humanizePercentage }} full."
+
+      # Redis memory usage
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis memory usage is high"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}."
+
+      # Container restart frequency
+      - alert: ContainerRestartingFrequently
+        expr: rate(container_start_time_seconds[1h]) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container restarting frequently"
+          description: "Container {{ $labels.name }} is restarting frequently."
+
+  - name: business-metrics-alerts
+    rules:
+      # Low conversion rate
+      - alert: LowConversionRate
+        expr: rate(successful_exports_total[1h]) / rate(upload_attempts_total[1h]) < 0.7
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low export conversion rate"
+          description: "Export conversion rate is {{ $value | humanizePercentage }} over the last hour."
+
+      # Unusual traffic patterns
+      - alert: UnusualTrafficSpike
+        expr: rate(flask_http_request_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: info
+        annotations:
+          summary: "Unusual traffic spike detected"
+          description: "Request rate is {{ $value }} requests per second, which is unusually high."
+
+      # Beta user feedback alerts
+      - alert: NegativeFeedbackSpike
+        expr: rate(beta_feedback_negative_total[1h]) > 0.1
+        for: 15m
+        labels:
+          severity: info
+        annotations:
+          summary: "Spike in negative beta feedback"
+          description: "Negative feedback rate is {{ $value }} per hour."
