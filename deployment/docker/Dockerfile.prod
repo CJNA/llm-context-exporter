@@ -1,0 +1,65 @@
+# Production Dockerfile for LLM Context Exporter
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    FLASK_ENV=production \
+    FLASK_DEBUG=False
+
+# Create app user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set work directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        curl \
+        nginx \
+        supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install gunicorn
+
+# Copy application code
+COPY src/ ./src/
+COPY setup.py .
+
+# Install the application
+RUN pip install -e .
+
+# Copy configuration files
+COPY deployment/config/gunicorn.conf.py ./config/
+COPY deployment/config/logging.conf ./config/
+COPY deployment/docker/nginx.conf /etc/nginx/sites-available/default
+COPY deployment/docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Create necessary directories
+RUN mkdir -p /app/logs /app/uploads /app/outputs /var/log/supervisor \
+    && chown -R appuser:appuser /app \
+    && chown -R appuser:appuser /var/log/supervisor
+
+# Remove default nginx site
+RUN rm -f /etc/nginx/sites-enabled/default
+
+# Copy nginx configuration
+RUN ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
+
+# Expose port
+EXPOSE 80 443
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/health || exit 1
+
+# Switch to non-root user
+USER appuser
+
+# Start supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
