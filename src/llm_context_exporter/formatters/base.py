@@ -45,7 +45,7 @@ class PlatformFormatter(ABC):
         pass
     
     @abstractmethod
-    def get_size_limits(self) -> dict:
+    def get_size_limits(self) -> Dict:
         """
         Get size limits for this platform.
         
@@ -55,7 +55,7 @@ class PlatformFormatter(ABC):
         pass
     
     @abstractmethod
-    def check_size_constraints(self, context: UniversalContextPack) -> dict:
+    def check_size_constraints(self, context: UniversalContextPack) -> Dict:
         """
         Check if context fits within platform size constraints.
         
@@ -87,7 +87,7 @@ class PlatformFormatter(ABC):
         """
         pass
     
-    def get_formatter_info(self) -> dict:
+    def get_formatter_info(self) -> Dict:
         """
         Get information about this formatter.
         
