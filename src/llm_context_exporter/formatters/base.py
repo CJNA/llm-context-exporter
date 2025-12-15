@@ -5,7 +5,7 @@ This module defines the abstract base class that all platform formatters must im
 """
 
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Union, List
 from ..core.models import UniversalContextPack, GeminiOutput, OllamaOutput
 
 
@@ -101,7 +101,7 @@ class PlatformFormatter(ABC):
             "description": self.__doc__ or "No description available"
         }
     
-    def validate_context(self, context: UniversalContextPack) -> list[str]:
+    def validate_context(self, context: UniversalContextPack) -> List[str]:
         """
         Validate context pack for formatting.
         
