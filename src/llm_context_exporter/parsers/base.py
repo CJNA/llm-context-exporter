@@ -5,7 +5,7 @@ This module defines the abstract base class that all platform parsers must imple
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, List, Dict
 from ..core.models import ParsedExport
 
 
@@ -62,7 +62,7 @@ class PlatformParser(ABC):
         pass
     
     @abstractmethod
-    def get_supported_versions(self) -> list[str]:
+    def get_supported_versions(self) -> List[str]:
         """
         Get list of supported format versions.
         
@@ -87,7 +87,7 @@ class PlatformParser(ABC):
         except (ParseError, UnsupportedFormatError):
             return False
     
-    def get_parser_info(self) -> dict:
+    def get_parser_info(self) -> Dict:
         """
         Get information about this parser.
         

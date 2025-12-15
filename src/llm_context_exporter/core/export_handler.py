@@ -7,7 +7,7 @@ and incremental updates to provide a complete export workflow.
 
 import os
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 
 from ..parsers.chatgpt import ChatGPTParser
@@ -226,7 +226,7 @@ class ExportHandler:
         # Fallback to full export
         return self.extractor.extract_context(current_export.conversations)
     
-    def _save_gemini_output(self, output: GeminiOutput, output_dir: str) -> list:
+    def _save_gemini_output(self, output: GeminiOutput, output_dir: str) -> List:
         """Save Gemini-formatted output to files."""
         os.makedirs(output_dir, exist_ok=True)
         files = []
@@ -245,7 +245,7 @@ class ExportHandler:
         
         return files
     
-    def _save_ollama_output(self, output: OllamaOutput, output_dir: str) -> list:
+    def _save_ollama_output(self, output: OllamaOutput, output_dir: str) -> List:
         """Save Ollama-formatted output to files."""
         os.makedirs(output_dir, exist_ok=True)
         files = []

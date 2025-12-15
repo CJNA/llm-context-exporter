@@ -5,7 +5,7 @@ This module defines the abstract base class that all platform formatters must im
 """
 
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Union, List, Dict
 from ..core.models import UniversalContextPack, GeminiOutput, OllamaOutput
 
 
@@ -45,7 +45,7 @@ class PlatformFormatter(ABC):
         pass
     
     @abstractmethod
-    def get_size_limits(self) -> dict:
+    def get_size_limits(self) -> Dict:
         """
         Get size limits for this platform.
         
@@ -55,7 +55,7 @@ class PlatformFormatter(ABC):
         pass
     
     @abstractmethod
-    def check_size_constraints(self, context: UniversalContextPack) -> dict:
+    def check_size_constraints(self, context: UniversalContextPack) -> Dict:
         """
         Check if context fits within platform size constraints.
         
@@ -87,7 +87,7 @@ class PlatformFormatter(ABC):
         """
         pass
     
-    def get_formatter_info(self) -> dict:
+    def get_formatter_info(self) -> Dict:
         """
         Get information about this formatter.
         
@@ -101,7 +101,7 @@ class PlatformFormatter(ABC):
             "description": self.__doc__ or "No description available"
         }
     
-    def validate_context(self, context: UniversalContextPack) -> list[str]:
+    def validate_context(self, context: UniversalContextPack) -> List[str]:
         """
         Validate context pack for formatting.
         
