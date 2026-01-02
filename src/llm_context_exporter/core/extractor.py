@@ -320,7 +320,8 @@ class ContextExtractor:
         last_discussed = max(conv.updated_at for conv in conversations)
         days_since_last = (datetime.now() - last_discussed).days
         # Higher score for more recent and more frequent discussions
-        relevance_score = len(conversations) * 0.1 + max(0, 1.0 - (days_since_last / 365.0))
+        # Clamp to [0.0, 1.0] range to satisfy Pydantic validation
+        relevance_score = min(1.0, len(conversations) * 0.1 + max(0, 1.0 - (days_since_last / 365.0)))
         
         # Extract key challenges
         key_challenges = self._extract_challenges_from_conversations(conversations)

@@ -305,11 +305,13 @@ def export(input, target, output, model, interactive, update, exclude_conversati
             console.print(f"[dim]Would apply filters: {len(filters.excluded_topics)} topics excluded[/dim]")
         return
     
-    # Create export configuration
+    # Create export configuration - use absolute path for output
+    output_path = os.path.abspath(output)
+    
     config = ExportConfig(
         input_path=input,
         target_platform=target,
-        output_path=output,
+        output_path=output_path,
         base_model=model if target == 'ollama' else None,
         filters=filters,
         interactive=interactive,

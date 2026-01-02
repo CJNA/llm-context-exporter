@@ -158,6 +158,9 @@ cython_debug/
 #  project, it is recommended to ignore the whole .idea directory.
 .idea/
 
+# Web interface (v2 - not ready for release)
+src/llm_context_exporter/web/
+
 # Project-specific ignores
 *.zip
 exports/
