@@ -164,6 +164,7 @@ src/llm_context_exporter/web/
 # Project-specific ignores
 *.zip
 exports/
+project_doc/
 
 # Generated output folders
 gemini_output/

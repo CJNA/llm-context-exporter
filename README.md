@@ -10,10 +10,8 @@ A privacy-focused, open-source tool for migrating your accumulated context from 
 - **🎛️ Interactive Filtering**: Choose what context to include or exclude
 - **🔄 Incremental Updates**: Keep your context current without re-exporting everything
 - **✅ Validation Testing**: Verify successful context transfer with generated test questions
-- **🌐 Web Interface**: Simple browser-based interface for non-technical users
 - **⚡ CLI Tool**: Command-line interface for developers and power users
 - **🔐 Security Features**: Encryption, sensitive data detection, and secure deletion
-- **💰 Payment Integration**: Optional payment system for hosted web interface
 
 ## Project Structure
 
@@ -41,11 +39,6 @@ llm-context-exporter/
 │   │   ├── encryption.py     # File encryption utilities
 │   │   ├── detection.py      # Sensitive data detection
 │   │   └── deletion.py       # Secure file deletion
-│   │
-│   ├── web/                   # Web interface components
-│   │   ├── app.py            # Flask application
-│   │   ├── payment.py        # Stripe payment processing
-│   │   └── beta.py           # Beta user management
 │   │
 │   └── cli/                   # Command-line interface
 │       └── main.py           # CLI implementation
@@ -189,13 +182,6 @@ llm-context-export export -i new_export.zip -t gemini -o ./updated \
   --update ./previous/context.json
 ```
 
-### Web Interface
-```bash
-# Start local web interface (great for non-technical users)
-llm-context-export web
-# Open http://localhost:8080 in your browser
-```
-
 ### Validation and Testing
 ```bash
 # Generate validation questions
@@ -277,7 +263,6 @@ The LLM Context Exporter uses a standardized **Universal Context Pack** format t
 | `validate` | Generate validation tests | `llm-context-export validate -c ./output -t gemini` |
 | `compare` | Compare target platforms | `llm-context-export compare` |
 | `delta` | Generate incremental update package | `llm-context-export delta -c new.zip -p old.json -o ./delta` |
-| `web` | Start web interface | `llm-context-export web --port 8080` |
 | `compatibility` | Check platform compatibility | `llm-context-export compatibility -f export.zip -t ollama` |
 | `info` | Show platform information | `llm-context-export info --verbose` |
 | `examples` | Show usage examples | `llm-context-export examples` |
@@ -301,20 +286,6 @@ Options:
   --help                        Show help message
 ```
 
-### Admin Commands (Beta Management)
-
-```bash
-llm-context-export admin [COMMAND]
-
-Commands:
-  list-users                    List all beta users
-  add-user                      Add new beta user
-  remove-user                   Remove beta user
-  user-stats                    Show user statistics
-  feedback                      View feedback by rating
-  report                        Generate usage report
-```
-
 ## 📚 Documentation
 
 ### Complete Documentation
@@ -323,7 +294,6 @@ For comprehensive guides and references, see our [documentation directory](docs/
 - **[CLI Usage Guide](docs/CLI_USAGE_GUIDE.md)** - Complete command-line reference with examples
 - **[Library Usage Guide](docs/LIBRARY_USAGE.md)** - Python library integration and API reference  
 - **[Context Schema](docs/CONTEXT_SCHEMA.md)** - Universal Context Pack format specification
-- **[Admin Guide](docs/ADMIN_GUIDE.md)** - Beta user management and administration
 - **[Privacy Policy](docs/PRIVACY_POLICY.md)** - Data handling and privacy practices
 - **[Terms of Service](docs/TERMS_OF_SERVICE.md)** - Usage terms and conditions
 
@@ -352,10 +322,8 @@ See the [examples directory](examples/) for comprehensive demonstrations:
 
 - **[library_usage_example.py](examples/library_usage_example.py)** - Complete library integration examples
 - **[transfer_examples.py](examples/transfer_examples.py)** - Successful vs unsuccessful transfer scenarios
-- **[admin_demo.py](examples/admin_demo.py)** - Beta user management examples
 - **[security_demo.py](examples/security_demo.py)** - Security features demonstration
 - **[validation_demo.py](examples/validation_demo.py)** - Validation test generation
-- **[payment_demo.py](examples/payment_demo.py)** - Payment system integration
 
 ## ✅ Examples of Successful Transfers
 
@@ -451,7 +419,7 @@ The project follows a modular architecture with clear separation of concerns:
 - **Core Layer**: Platform-agnostic data models and processing logic
 - **Parser Layer**: Platform-specific input handling (ChatGPT, Claude, etc.)
 - **Formatter Layer**: Platform-specific output generation (Gemini, Ollama, etc.)
-- **Interface Layer**: CLI and web interfaces for user interaction
+- **Interface Layer**: CLI interface for user interaction
 - **Security Layer**: Privacy protection and secure file handling
 
 This design enables easy extension to support additional platforms in the future.
@@ -467,22 +435,9 @@ This design enables easy extension to support additional platforms in the future
 - **🗑️ Secure Deletion**: Multi-pass overwriting of temporary files
 - **📡 Network Monitoring**: Ensures no unexpected network activity during processing
 
-### What We Collect (Web Interface Only)
+### What We Collect
 
-**CLI Tool**: Collects no data whatsoever.
-
-**Web Interface** (if you use the hosted version):
-- **Payment Information**: Processed by Stripe (we never see your credit card details)
-- **Usage Statistics**: Number of exports, file sizes (for beta users only)
-- **Feedback**: Optional feedback you provide (beta users only)
-- **No Personal Data**: We don't store your ChatGPT conversations or extracted context
-
-### Data Retention
-
-- **Local Files**: You control all local files and can delete them anytime
-- **Web Interface**: Session data is automatically deleted after 1 hour
-- **Payment Records**: Handled by Stripe according to their retention policy
-- **Beta Feedback**: Stored until beta program ends, then deleted
+**CLI Tool**: Collects no data whatsoever. All processing happens locally on your machine.
 
 ### Security Measures
 
@@ -520,7 +475,6 @@ This design enables easy extension to support additional platforms in the future
 - **Your Responsibility**: You're responsible for your data and its use
 - **Platform Compliance**: Ensure you comply with target platform terms
 - **Data Accuracy**: We don't guarantee perfect context extraction
-- **Service Availability**: Web interface availability not guaranteed
 
 ## 🤝 Contributing
 
@@ -562,7 +516,6 @@ pytest
 
 - **New Platform Adapters**: Add support for Claude, Perplexity, etc.
 - **Enhanced Context Extraction**: Improve project and preference detection
-- **UI/UX Improvements**: Better web interface design
 - **Documentation**: Tutorials, guides, and examples
 - **Testing**: More test coverage and edge cases
 - **Performance**: Optimization for large exports
@@ -609,32 +562,7 @@ llm-context-export export -i export.zip -t gemini -o ./output \
 - **Issues**: [GitHub Issues](https://github.com/llm-context-exporter/llm-context-exporter/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/llm-context-exporter/llm-context-exporter/discussions)
 
-## 📊 Beta Program
-
-Interested in early access to new features? Join our beta program!
-
-### Beta Benefits
-
-- **Free Access**: No payment required for web interface
-- **Early Features**: Access to new features before public release
-- **Direct Feedback**: Help shape the product development
-- **Priority Support**: Faster response to issues and questions
-
-### How to Join
-
-1. **Email us**: Send a request to beta@llm-context-exporter.com
-2. **Include**: Brief description of your use case
-3. **Get Access**: We'll add you to the beta whitelist
-4. **Provide Feedback**: Help us improve the tool
-
-### Beta User Responsibilities
-
-- **Test Features**: Try new functionality and report issues
-- **Provide Feedback**: Share your experience and suggestions
-- **Report Bugs**: Help us identify and fix problems
-- **Respect Privacy**: Don't share beta features publicly
-
-## 📈 Roadmap
+## � Reoadmap
 
 ### v1.0: Core Functionality ✅
 - [x] ChatGPT export parsing
@@ -643,7 +571,6 @@ Interested in early access to new features? Join our beta program!
 - [x] CLI interface
 - [x] Security features
 - [x] Validation testing
-- [x] Beta user management
 
 ### v1.1: Stability & Claude Support 🚧
 - [ ] **Claude export support** - Import from Anthropic Claude conversations
@@ -695,8 +622,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 - **[Pydantic](https://pydantic.dev/)** - Data validation and parsing
 - **[Click](https://click.palletsprojects.com/)** - Command-line interface
 - **[Rich](https://rich.readthedocs.io/)** - Beautiful terminal output
-- **[Flask](https://flask.palletsprojects.com/)** - Web interface
-- **[Stripe](https://stripe.com/)** - Payment processing
 - **[Cryptography](https://cryptography.io/)** - Security and encryption
 - **[Hypothesis](https://hypothesis.readthedocs.io/)** - Property-based testing
 
