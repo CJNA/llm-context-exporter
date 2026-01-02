@@ -93,11 +93,11 @@ class ExportHandler:
             # Step 4: Format for target platform
             print(f"Formatting for {config.target_platform}...")
             if config.target_platform == "gemini":
-                output = self.gemini_formatter.format_for_gemini(context_pack)
+                output = self.gemini_formatter.format_context(context_pack)
                 output_files = self._save_gemini_output(output, config.output_path)
             elif config.target_platform == "ollama":
                 base_model = config.base_model or "qwen"
-                output = self.ollama_formatter.format_for_ollama(context_pack, base_model)
+                output = self.ollama_formatter.format_context(context_pack, base_model)
                 output_files = self._save_ollama_output(output, config.output_path)
             else:
                 raise ValueError(f"Unsupported target platform: {config.target_platform}")
@@ -227,21 +227,28 @@ class ExportHandler:
         return self.extractor.extract_context(current_export.conversations)
     
     def _save_gemini_output(self, output: GeminiOutput, output_dir: str) -> list:
-        """Save Gemini-formatted output to files."""
+        """Save Gemini Gem-formatted output to files."""
         os.makedirs(output_dir, exist_ok=True)
         files = []
         
-        # Save formatted text
-        text_file = os.path.join(output_dir, "gemini_saved_info.txt")
-        with open(text_file, 'w', encoding='utf-8') as f:
-            f.write(output.formatted_text)
-        files.append(text_file)
-        
-        # Save instructions
-        instructions_file = os.path.join(output_dir, "gemini_instructions.md")
+        # Save Gem instructions (main file to paste into Gem)
+        instructions_file = os.path.join(output_dir, "gemini_gem_instructions.txt")
         with open(instructions_file, 'w', encoding='utf-8') as f:
-            f.write(output.instructions)
+            f.write(output.formatted_text)
         files.append(instructions_file)
+        
+        # Save Gem description (separate file for easy copy-paste)
+        if output.metadata.get("gem_description"):
+            description_file = os.path.join(output_dir, "gem_description.txt")
+            with open(description_file, 'w', encoding='utf-8') as f:
+                f.write(output.metadata["gem_description"])
+            files.append(description_file)
+        
+        # Save setup guide
+        guide_file = os.path.join(output_dir, "gem_setup_guide.md")
+        with open(guide_file, 'w', encoding='utf-8') as f:
+            f.write(output.instructions)
+        files.append(guide_file)
         
         return files
     

@@ -162,6 +162,7 @@ cython_debug/
 *.zip
 *.json
 exports/
+gemini-output/
 output/
 temp/
 .llm_context_exporter_filters.json
@@ -181,3 +182,4 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+

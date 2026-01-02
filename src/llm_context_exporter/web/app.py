@@ -14,8 +14,10 @@ import uuid
 import tempfile
 import shutil
 import logging
+import json
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
+from dataclasses import asdict, is_dataclass
 import threading
 import time
 
@@ -32,6 +34,44 @@ from ..models.config import FilterConfig
 from ..models.output import GeminiOutput, OllamaOutput
 
 logger = logging.getLogger(__name__)
+
+
+def to_dict(obj: Any) -> Any:
+    """Convert an object to a dictionary, handling both dataclasses and Pydantic models."""
+    if obj is None:
+        return None
+    if is_dataclass(obj) and not isinstance(obj, type):
+        return asdict(obj)
+    if hasattr(obj, 'model_dump'):
+        return obj.model_dump()
+    if hasattr(obj, 'dict'):
+        return obj.dict()
+    if isinstance(obj, dict):
+        return {k: to_dict(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [to_dict(item) for item in obj]
+    return obj
+
+
+def _get_session_data_path(app: Flask, session_id: str, key: str) -> str:
+    """Get path for session data file."""
+    return os.path.join(app.config['UPLOAD_FOLDER'], f"{session_id}_{key}.json")
+
+
+def _save_session_data(app: Flask, session_id: str, key: str, data: Any) -> None:
+    """Save large data to file instead of cookie session."""
+    path = _get_session_data_path(app, session_id, key)
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, default=str)
+
+
+def _load_session_data(app: Flask, session_id: str, key: str) -> Optional[Dict]:
+    """Load data from session file."""
+    path = _get_session_data_path(app, session_id, key)
+    if os.path.exists(path):
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return None
 
 
 def create_app(config: Optional[dict] = None) -> Flask:
@@ -195,11 +235,14 @@ def register_routes(app: Flask):
             extractor = ContextExtractor()
             context_pack = extractor.extract_context(parsed_export.conversations)
             
-            # Store in session
+            # Store in session (small data only) and files (large data)
             session['upload_filename'] = filename
             session['upload_path'] = upload_path
-            session['parsed_export'] = parsed_export.model_dump()
-            session['context_pack'] = context_pack.model_dump()
+            session_id = session['session_id']
+            
+            # Save large data to files instead of cookie session
+            _save_session_data(app, session_id, 'parsed_export', to_dict(parsed_export))
+            _save_session_data(app, session_id, 'context_pack', to_dict(context_pack))
             
             # Return preview data
             return jsonify({
@@ -220,10 +263,12 @@ def register_routes(app: Flask):
     def preview_context():
         """Get preview of extracted context."""
         try:
-            if 'context_pack' not in session:
+            session_id = session.get('session_id')
+            context_data = _load_session_data(app, session_id, 'context_pack')
+            
+            if not context_data:
                 return jsonify({'error': 'No context data found. Please upload a file first.'}), 400
             
-            context_data = session['context_pack']
             context_pack = UniversalContextPack(**context_data)
             
             # Prepare preview data
@@ -275,7 +320,10 @@ def register_routes(app: Flask):
     def apply_filters():
         """Apply filters to context."""
         try:
-            if 'context_pack' not in session:
+            session_id = session.get('session_id')
+            context_data = _load_session_data(app, session_id, 'context_pack')
+            
+            if not context_data:
                 return jsonify({'error': 'No context data found. Please upload a file first.'}), 400
             
             # Get filter configuration from request
@@ -287,15 +335,14 @@ def register_routes(app: Flask):
             filter_config = FilterConfig(**filter_data)
             
             # Apply filters
-            context_data = session['context_pack']
             context_pack = UniversalContextPack(**context_data)
             
             filter_engine = FilterEngine()
             filtered_context = filter_engine.apply_filters(context_pack, filter_config)
             
-            # Update session with filtered context
-            session['filtered_context_pack'] = filtered_context.model_dump()
-            session['filter_config'] = filter_config.model_dump()
+            # Save filtered data to files
+            _save_session_data(app, session_id, 'filtered_context_pack', to_dict(filtered_context))
+            _save_session_data(app, session_id, 'filter_config', to_dict(filter_config))
             
             return jsonify({
                 'success': True,
@@ -384,7 +431,12 @@ def register_routes(app: Flask):
     def generate_output():
         """Generate output for target platform (with payment check)."""
         try:
-            if 'context_pack' not in session:
+            session_id = session.get('session_id')
+            context_data = _load_session_data(app, session_id, 'filtered_context_pack')
+            if not context_data:
+                context_data = _load_session_data(app, session_id, 'context_pack')
+            
+            if not context_data:
                 return jsonify({'error': 'No context data found. Please upload a file first.'}), 400
             
             request_data = request.get_json()
@@ -402,8 +454,7 @@ def register_routes(app: Flask):
                 if not session.get('payment_verified', False):
                     return jsonify({'error': 'Payment required but not verified'}), 402
             
-            # Get context (filtered if available, otherwise original)
-            context_data = session.get('filtered_context_pack', session['context_pack'])
+            # Get context pack
             context_pack = UniversalContextPack(**context_data)
             
             # Generate output based on target platform
@@ -446,7 +497,8 @@ def register_routes(app: Flask):
             validation_suite = validator.generate_tests(context_pack, target_platform)
             
             with open(os.path.join(output_dir, 'validation_tests.json'), 'w', encoding='utf-8') as f:
-                f.write(validation_suite.model_dump_json(indent=2))
+                import json
+                f.write(json.dumps(to_dict(validation_suite), indent=2, default=str))
             
             # Store export info in session
             session['export_id'] = export_id
@@ -455,7 +507,8 @@ def register_routes(app: Flask):
             
             # Record usage for beta users
             if user_email and app.beta_manager.is_beta_user(user_email):
-                conversations_count = len(session.get('parsed_export', {}).get('conversations', []))
+                parsed_data = _load_session_data(app, session_id, 'parsed_export')
+                conversations_count = len(parsed_data.get('conversations', [])) if parsed_data else 0
                 app.beta_manager.record_export(
                     email=user_email,
                     target_platform=target_platform,
@@ -509,7 +562,12 @@ def register_routes(app: Flask):
     def generate_validation():
         """Generate validation tests."""
         try:
-            if 'context_pack' not in session:
+            session_id = session.get('session_id')
+            context_data = _load_session_data(app, session_id, 'filtered_context_pack')
+            if not context_data:
+                context_data = _load_session_data(app, session_id, 'context_pack')
+            
+            if not context_data:
                 return jsonify({'error': 'No context data found. Please upload a file first.'}), 400
             
             request_data = request.get_json()
@@ -519,7 +577,6 @@ def register_routes(app: Flask):
                 return jsonify({'error': 'Invalid target platform'}), 400
             
             # Get context
-            context_data = session.get('filtered_context_pack', session['context_pack'])
             context_pack = UniversalContextPack(**context_data)
             
             # Generate validation tests
@@ -528,7 +585,7 @@ def register_routes(app: Flask):
             
             return jsonify({
                 'success': True,
-                'validation_suite': validation_suite.model_dump(),
+                'validation_suite': to_dict(validation_suite),
                 'questions_count': len(validation_suite.questions)
             })
             
@@ -554,7 +611,7 @@ def register_routes(app: Flask):
             
             if is_beta:
                 stats = app.beta_manager.get_usage_stats(email)
-                response['usage_stats'] = stats.model_dump()
+                response['usage_stats'] = to_dict(stats)
             
             return jsonify(response)
             

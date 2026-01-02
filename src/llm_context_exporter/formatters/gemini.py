@@ -1,9 +1,11 @@
 """
 Gemini formatter implementation.
 
-This module formats UniversalContextPack data for Google Gemini's Saved Info feature.
+This module formats UniversalContextPack data for Google Gemini Gems.
+Gems are custom AI personas that persist context across conversations.
 """
 
+import copy
 from typing import Dict, Any, List
 from datetime import datetime
 from ..models import UniversalContextPack, GeminiOutput, ValidationSuite, ValidationQuestion
@@ -12,19 +14,19 @@ from .base import PlatformFormatter, FormattingError, SizeLimitExceededError
 
 class GeminiFormatter(PlatformFormatter):
     """
-    Formatter for Google Gemini Saved Info.
+    Formatter for Google Gemini Gems.
     
-    Converts UniversalContextPack into text format optimized for Gemini's
-    comprehension and size limits.
+    Converts UniversalContextPack into instruction format optimized for
+    Gemini Gems - custom AI personas with persistent context.
     """
     
     target_platform = "gemini"
-    MAX_TEXT_LENGTH = 32000  # Approximate limit for Gemini Saved Info
-    RECOMMENDED_LENGTH = int(MAX_TEXT_LENGTH * 0.8)  # Leave buffer for safety
+    MAX_TEXT_LENGTH = 50000  # Gem instructions can be longer than Saved Info
+    RECOMMENDED_LENGTH = int(MAX_TEXT_LENGTH * 0.8)
     
     def format_context(self, context: UniversalContextPack) -> GeminiOutput:
         """
-        Format context pack for Gemini Saved Info.
+        Format context pack for Gemini Gems.
         
         Args:
             context: Universal context pack to format
@@ -52,7 +54,8 @@ class GeminiFormatter(PlatformFormatter):
                     )
             
             formatted_text = self._generate_formatted_text(working_context)
-            instructions = self._generate_instructions()
+            gem_description = self._generate_gem_description(working_context)
+            instructions = self._generate_instructions(gem_description)
             validation_tests = self._generate_validation_tests(working_context)
             
             return GeminiOutput(
@@ -66,7 +69,8 @@ class GeminiFormatter(PlatformFormatter):
                     "final_projects": len(working_context.projects),
                     "text_length": len(formatted_text),
                     "prioritized": working_context != context,
-                    "created_at": datetime.now().isoformat()
+                    "created_at": datetime.now().isoformat(),
+                    "gem_description": gem_description
                 }
             )
             
@@ -128,17 +132,9 @@ class GeminiFormatter(PlatformFormatter):
         Returns:
             Trimmed context pack that fits within size limits
         """
-        # Create a copy to modify
-        prioritized = UniversalContextPack(
-            version=context.version,
-            created_at=context.created_at,
-            source_platform=context.source_platform,
-            user_profile=context.user_profile,  # Always keep user profile
-            projects=[],
-            preferences=context.preferences,  # Always keep preferences
-            technical_context=context.technical_context,  # Always keep technical context
-            metadata=context.metadata.copy()
-        )
+        # Create a deep copy to avoid modifying the original
+        prioritized = copy.deepcopy(context)
+        prioritized.projects = []
         
         # Sort projects by relevance score (descending) and recency
         sorted_projects = sorted(
@@ -150,16 +146,8 @@ class GeminiFormatter(PlatformFormatter):
         # Add projects one by one until we approach the size limit
         for project in sorted_projects:
             # Create temporary context with this project added
-            temp_context = UniversalContextPack(
-                version=prioritized.version,
-                created_at=prioritized.created_at,
-                source_platform=prioritized.source_platform,
-                user_profile=prioritized.user_profile,
-                projects=prioritized.projects + [project],
-                preferences=prioritized.preferences,
-                technical_context=prioritized.technical_context,
-                metadata=prioritized.metadata
-            )
+            temp_context = copy.deepcopy(prioritized)
+            temp_context.projects = prioritized.projects + [project]
             
             # Check if adding this project would exceed the limit
             temp_text = self._generate_formatted_text(temp_context)
@@ -168,7 +156,7 @@ class GeminiFormatter(PlatformFormatter):
             else:
                 # Try adding a shortened version of the project
                 shortened_project = self._shorten_project(project)
-                temp_context.projects[-1] = shortened_project
+                temp_context.projects = prioritized.projects + [shortened_project]
                 temp_text = self._generate_formatted_text(temp_context)
                 if len(temp_text) <= max_size:
                     prioritized.projects.append(shortened_project)
@@ -200,148 +188,198 @@ class GeminiFormatter(PlatformFormatter):
         )
     
     def _generate_formatted_text(self, context: UniversalContextPack) -> str:
-        """Generate the formatted text for Gemini Saved Info."""
+        """Generate the Gem Instructions text optimized for Gemini Gems."""
         sections = []
         
-        # Header with export info
-        sections.append(f"# Personal Context Export")
-        sections.append(f"Exported from {context.source_platform.title()} on {context.created_at.strftime('%Y-%m-%d')}")
+        # Preamble - sets the persona
+        sections.append("You are my personal technical assistant and pair programmer. Use the following context about my skills, active projects, and preferences to tailor all your responses to my specific situation.")
         sections.append("")
         
         # User Profile Section
-        if context.user_profile.role or context.user_profile.background_summary or context.user_profile.expertise_areas:
-            sections.append("## About Me")
+        if context.user_profile.expertise_areas or context.user_profile.background_summary:
+            sections.append("## About the User")
             
             if context.user_profile.role:
-                sections.append(f"**Role:** {context.user_profile.role}")
+                sections.append(f"Role: {context.user_profile.role}")
             
             if context.user_profile.background_summary:
-                sections.append(f"**Background:** {context.user_profile.background_summary}")
+                sections.append(f"Background: {context.user_profile.background_summary}")
             
             if context.user_profile.expertise_areas:
-                expertise = ", ".join(context.user_profile.expertise_areas)
-                sections.append(f"**Expertise Areas:** {expertise}")
+                # Deduplicate and normalize
+                expertise = list(set(area.strip() for area in context.user_profile.expertise_areas))
+                sections.append(f"Expertise: {', '.join(expertise)}")
             
             sections.append("")
         
         # Technical Context Section
         if any([context.technical_context.languages, context.technical_context.frameworks, 
                 context.technical_context.tools, context.technical_context.domains]):
-            sections.append("## Technical Background")
+            sections.append("## Technical Stack")
             
             if context.technical_context.languages:
-                languages = ", ".join(context.technical_context.languages)
-                sections.append(f"**Programming Languages:** {languages}")
+                # Deduplicate case-insensitively
+                langs = list({lang.lower(): lang for lang in context.technical_context.languages}.values())
+                sections.append(f"Languages: {', '.join(sorted(langs))}")
             
             if context.technical_context.frameworks:
-                frameworks = ", ".join(context.technical_context.frameworks)
-                sections.append(f"**Frameworks & Libraries:** {frameworks}")
+                frameworks = list({fw.lower(): fw for fw in context.technical_context.frameworks}.values())
+                sections.append(f"Frameworks: {', '.join(sorted(frameworks))}")
             
             if context.technical_context.tools:
-                tools = ", ".join(context.technical_context.tools)
-                sections.append(f"**Development Tools:** {tools}")
+                tools = list({t.lower(): t for t in context.technical_context.tools}.values())
+                sections.append(f"Tools: {', '.join(sorted(tools))}")
             
             if context.technical_context.domains:
-                domains = ", ".join(context.technical_context.domains)
-                sections.append(f"**Technical Domains:** {domains}")
+                domains = list({d.lower(): d for d in context.technical_context.domains}.values())
+                sections.append(f"Domains: {', '.join(sorted(domains))}")
             
             sections.append("")
         
-        # Projects Section
+        # Active Projects Section - limit to most recent/relevant
         if context.projects:
-            sections.append("## Current Projects")
+            sections.append("## Active Projects")
             
-            for i, project in enumerate(context.projects, 1):
-                sections.append(f"### {i}. {project.name}")
-                sections.append(f"**Description:** {project.description}")
-                
+            # Sort by recency and take top 20
+            sorted_projects = sorted(
+                context.projects,
+                key=lambda p: p.last_discussed,
+                reverse=True
+            )[:20]
+            
+            for project in sorted_projects:
+                project_line = f"- **{project.name}**"
                 if project.tech_stack:
-                    tech_stack = ", ".join(project.tech_stack)
-                    sections.append(f"**Tech Stack:** {tech_stack}")
-                
-                if project.key_challenges:
-                    challenges = "; ".join(project.key_challenges)
-                    sections.append(f"**Key Challenges:** {challenges}")
-                
-                if project.current_status:
-                    sections.append(f"**Current Status:** {project.current_status}")
-                
-                sections.append(f"**Last Discussed:** {project.last_discussed.strftime('%Y-%m-%d')}")
-                sections.append("")
+                    tech = ", ".join(project.tech_stack[:5])
+                    project_line += f" ({tech})"
+                if project.description and project.description != f"Project involving development":
+                    # Only add description if it's meaningful
+                    desc = project.description[:100]
+                    if len(project.description) > 100:
+                        desc += "..."
+                    project_line += f": {desc}"
+                sections.append(project_line)
+            
+            if len(context.projects) > 20:
+                sections.append(f"- ... and {len(context.projects) - 20} more projects")
+            
+            sections.append("")
         
         # Preferences Section
         if any([context.preferences.coding_style, context.preferences.communication_style,
                 context.preferences.preferred_tools, context.preferences.work_patterns]):
-            sections.append("## Working Preferences")
+            sections.append("## Preferences")
             
             if context.preferences.communication_style:
-                sections.append(f"**Communication Style:** {context.preferences.communication_style}")
+                sections.append(f"Communication: {context.preferences.communication_style}")
             
             if context.preferences.coding_style:
                 style_items = [f"{k}: {v}" for k, v in context.preferences.coding_style.items()]
-                sections.append(f"**Coding Style:** {'; '.join(style_items)}")
+                sections.append(f"Coding style: {'; '.join(style_items)}")
             
             if context.preferences.preferred_tools:
                 tools = ", ".join(context.preferences.preferred_tools)
-                sections.append(f"**Preferred Tools:** {tools}")
-            
-            if context.preferences.work_patterns:
-                pattern_items = [f"{k}: {v}" for k, v in context.preferences.work_patterns.items()]
-                sections.append(f"**Work Patterns:** {'; '.join(pattern_items)}")
+                sections.append(f"Preferred tools: {tools}")
             
             sections.append("")
         
-        # Footer
-        sections.append("---")
-        sections.append("*This context was automatically extracted from conversation history.*")
-        sections.append("*Please reference this information when providing assistance.*")
+        # Behavioral instructions
+        sections.append("## How to Assist")
+        sections.append("- Reference my specific projects and tech stack when relevant")
+        sections.append("- Provide solutions aligned with my expertise level")
+        sections.append("- Be concise and actionable")
+        sections.append("- When I mention a project by name, recall its context")
+        sections.append("- Suggest improvements based on my preferred tools and patterns")
         
         return "\n".join(sections)
     
-    def _generate_instructions(self) -> str:
-        """Generate step-by-step instructions for using the output."""
-        return """# How to Add Context to Gemini Saved Info
+    def _generate_instructions(self, gem_description: str) -> str:
+        """Generate step-by-step instructions for creating a Gemini Gem."""
+        return f"""# How to Create Your Gemini Gem
 
-Follow these steps to add your exported context to Google Gemini:
+Gemini Gems are custom AI personas that remember your context across all conversations.
 
-## Step 1: Access Gemini Saved Info
-1. Open Google Gemini in your web browser: https://gemini.google.com
-2. Sign in to your Google account if not already signed in
-3. Look for your profile picture or initial in the top-right corner
-4. Click on your profile picture to open the menu
+## Requirements
+- Gemini Advanced subscription (required for Gems)
 
-## Step 2: Navigate to Saved Info
-1. In the dropdown menu, look for "Saved Info" or "Personal Info"
-2. Click on "Saved Info" to open the saved information panel
-3. If you don't see this option, try looking for "Settings" and then "Saved Info"
+## Step 1: Open Gem Manager
+1. Go to https://gemini.google.com
+2. Look for the **Gem Manager** in the left sidebar
+3. Click **"New Gem"**
 
-## Step 3: Add Your Context
-1. Look for an "Add Info" button, "+" button, or "New" option
-2. Click to create a new saved info entry
-3. You'll see a text input area or form
-4. Copy the formatted text from the output file
-5. Paste it into the text area
+## Step 2: Configure Your Gem
 
-## Step 4: Save and Verify
-1. Click "Save" or "Add" to store your context
-2. You should see confirmation that the information was saved
-3. The context will now be available to Gemini in future conversations
+### Name
+```
+My Dev Partner
+```
+(or choose your own name)
 
-## Step 5: Test Your Context
-Use the validation questions provided to test that Gemini has access to your context:
-- Ask about your current projects
-- Inquire about your technical background
-- Test knowledge of your preferences
+### Description
+Copy from `gem_description.txt` or use:
+```
+{gem_description}
+```
 
-## Troubleshooting
-- If the text is too long, try using the prioritized version
-- If Saved Info isn't available, check that you're using the latest version of Gemini
-- Some features may vary by region or account type
+### Instructions
+Copy the entire contents of `gemini_gem_instructions.txt` and paste it into the Instructions field.
 
-## Important Notes
-- Your context is stored securely with your Google account
-- You can edit or remove this information at any time
-- Gemini will use this context to provide more personalized assistance"""
+## Step 3: Optional - Add Knowledge Files
+You can upload `context_pack.json` to the Knowledge section for the Gem to reference detailed project information.
+
+## Step 4: Save and Test
+1. Click **Save**
+2. Open your new Gem from the sidebar
+3. Test with questions like:
+   - "What projects am I working on?"
+   - "What's my tech stack?"
+   - "Help me with my Carvis project"
+
+## Tips
+- The Gem persists across sessions - no need to re-paste context
+- You can create multiple Gems for different purposes (work, personal, specific projects)
+- Edit the Instructions anytime to update your context
+
+## Updating Your Gem
+When you export new conversations, re-run the export and update the Instructions field with the new content."""
+    
+    def _generate_gem_description(self, context: UniversalContextPack) -> str:
+        """Generate a concise description for the Gem."""
+        parts = []
+        
+        # Add role if available
+        if context.user_profile.role:
+            parts.append(f"Technical assistant for {context.user_profile.role}")
+        else:
+            parts.append("Personal dev partner")
+        
+        # Add top languages (max 4)
+        if context.technical_context.languages:
+            langs = list({lang.lower(): lang for lang in context.technical_context.languages}.values())[:4]
+            parts.append(f"with expertise in {', '.join(sorted(langs))}")
+        
+        # Add project count
+        project_count = len(context.projects)
+        if project_count > 0:
+            parts.append(f"Knows {project_count}+ projects")
+        
+        # Add key project names (find notable ones)
+        notable_projects = []
+        for p in context.projects[:50]:  # Check first 50
+            name_lower = p.name.lower()
+            # Look for project names that seem significant
+            if any(kw in name_lower for kw in ['carvis', 'app', 'api', 'service', 'platform', 'system']):
+                notable_projects.append(p.name)
+                if len(notable_projects) >= 2:
+                    break
+        
+        if notable_projects:
+            parts.append(f"including {', '.join(notable_projects)}")
+        
+        # Add source info
+        parts.append("Imported from ChatGPT history.")
+        
+        return " ".join(parts)
     
     def _generate_validation_tests(self, context: UniversalContextPack) -> ValidationSuite:
         """Generate validation tests for the context."""

@@ -371,11 +371,11 @@ def _show_next_steps(target: str, output_files: List[str]):
     console.print(f"\n[bold blue]Next Steps for {target.upper()}:[/bold blue]")
     
     if target == 'gemini':
-        console.print("1. Copy the generated text from the output file")
-        console.print("2. Go to Google Gemini (gemini.google.com)")
-        console.print("3. Click on your profile → Saved Info")
-        console.print("4. Paste the context text")
-        console.print("5. Test with the validation questions")
+        console.print("1. Open [cyan]gemini.google.com[/cyan] → Gem Manager (left sidebar)")
+        console.print("2. Click [cyan]New Gem[/cyan]")
+        console.print("3. Name: [cyan]My Dev Partner[/cyan] (or your choice)")
+        console.print("4. Paste contents of [cyan]gemini_gem_instructions.txt[/cyan] into Instructions")
+        console.print("5. Save and test your new Gem!")
         
     elif target == 'ollama':
         console.print("1. Make sure Ollama is running: [cyan]ollama serve[/cyan]")
@@ -387,7 +387,7 @@ def _show_next_steps(target: str, output_files: List[str]):
         console.print("3. Test your model: [cyan]ollama run my-context[/cyan]")
         console.print("4. Ask about your projects to verify context transfer")
     
-    console.print(f"\n[dim]Run validation tests: llm-context-export validate -c {output_files[0]} -t {target}[/dim]")
+    console.print(f"\n[dim]See gem_setup_guide.md for detailed instructions[/dim]")
 
 
 @cli.command()

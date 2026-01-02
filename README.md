@@ -5,7 +5,7 @@ A privacy-focused, open-source tool for migrating your accumulated context from 
 ## 🚀 Features
 
 - **🔒 Privacy-First**: All processing happens locally on your machine - no data leaves your computer
-- **🎯 Multiple Target Platforms**: Export to Gemini Saved Info or Ollama Modelfiles
+- **🎯 Multiple Target Platforms**: Export to Gemini Gems or Ollama Modelfiles
 - **🧠 Intelligent Context Extraction**: Automatically identify projects, preferences, and technical expertise
 - **🎛️ Interactive Filtering**: Choose what context to include or exclude
 - **🔄 Incremental Updates**: Keep your context current without re-exporting everything
@@ -31,7 +31,7 @@ llm-context-exporter/
 │   │
 │   ├── formatters/            # Platform-specific output formatters
 │   │   ├── base.py           # Abstract formatter interface
-│   │   ├── gemini.py         # Gemini Saved Info formatter
+│   │   ├── gemini.py         # Gemini Gems formatter
 │   │   └── ollama.py         # Ollama Modelfile formatter
 │   │
 │   ├── validation/            # Validation test generation
@@ -140,7 +140,11 @@ llm-context-export export -i chatgpt_export.zip -t ollama -o ./ollama_output
 
 ### Step 4: Use Your Exported Context
 
-**Gemini**: Copy the generated text and paste it into [Gemini Saved Info](https://gemini.google.com)
+**Gemini (Gems)**: 
+1. Go to [gemini.google.com](https://gemini.google.com) → Gem Manager (left sidebar)
+2. Click "New Gem"
+3. Paste contents of `gemini_gem_instructions.txt` into the Instructions field
+4. Save and start using your personalized Gem!
 
 **Ollama**: Create your custom model:
 ```bash
@@ -161,7 +165,7 @@ llm-context-export validate -c ./output -t gemini --interactive
 # Simple export to Gemini
 llm-context-export export -i chatgpt_export.zip -t gemini -o ./output
 
-# Export to Ollama with specific model
+# Export to Ollama with specific model (QWEN as an example)
 llm-context-export export -i chatgpt_export.zip -t ollama -m qwen -o ./output
 ```
 
@@ -632,30 +636,33 @@ Interested in early access to new features? Join our beta program!
 
 ## 📈 Roadmap
 
-### Phase 1: Core Functionality ✅
+### v1.0: Core Functionality ✅
 - [x] ChatGPT export parsing
 - [x] Context extraction and filtering
-- [x] Gemini and Ollama formatters
+- [x] Gemini Gems and Ollama formatters
 - [x] CLI interface
 - [x] Security features
 - [x] Validation testing
-
-### Phase 2: Enhanced Experience 🚧
 - [x] Web interface
 - [x] Payment integration
 - [x] Beta user management
+
+### v1.1: Stability & Claude Support 🚧
+- [ ] **Claude export support** - Import from Anthropic Claude conversations
+- [ ] **Web service stability** - Improved session handling and error recovery
+- [ ] **Easy deployment** - One-click hosting options for self-hosted instances
+- [ ] **Docker support** - Simple `docker-compose up` deployment
 - [ ] Advanced filtering options
 - [ ] Context analytics dashboard
-- [ ] Batch processing
 
-### Phase 3: Platform Expansion 📋
-- [ ] Claude export support
+### v1.2: Platform Expansion 📋
 - [ ] Perplexity export support
 - [ ] Anthropic Claude target
 - [ ] OpenAI Assistant API target
 - [ ] Custom LLM targets
+- [ ] Batch processing
 
-### Phase 4: Advanced Features 🔮
+### v2.0: Advanced Features 🔮
 - [ ] Team collaboration features
 - [ ] Context sharing and templates
 - [ ] API for third-party integrations
