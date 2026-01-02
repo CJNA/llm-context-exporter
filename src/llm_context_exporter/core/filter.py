@@ -411,41 +411,6 @@ class FilterEngine:
             "coherence_maintained": len(filtered_context.projects) > 0  # Simple coherence check
         }
     
-    def get_filterable_conversations(self, conversations: List[Conversation]) -> List[FilterableItem]:
-        """
-        Return list of conversations that can be filtered.
-        
-        This method is used during the parsing phase when we have access
-        to raw conversation data.
-        
-        Args:
-            conversations: List of conversations to analyze
-            
-        Returns:
-            List of filterable conversation items
-        """
-        items = []
-        
-        for conversation in conversations:
-            # Calculate some basic metadata
-            message_count = len(conversation.messages)
-            duration_days = (conversation.updated_at - conversation.created_at).days
-            
-            items.append(FilterableItem(
-                item_id=f"conversation_{conversation.id}",
-                item_type="conversation",
-                title=conversation.title,
-                description=f"Conversation with {message_count} messages",
-                metadata={
-                    "id": conversation.id,
-                    "created_at": conversation.created_at.isoformat(),
-                    "updated_at": conversation.updated_at.isoformat(),
-                    "message_count": message_count,
-                    "duration_days": duration_days
-                }
-            ))
-        
-        return items
     
     def create_date_range_filter(self, start_date: datetime, end_date: datetime) -> FilterConfig:
         """
