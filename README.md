@@ -1,368 +1,714 @@
 # LLM Context Exporter
 
-A privacy-focused, open-source CLI tool and library that enables users to migrate their accumulated context from ChatGPT to either Google Gemini or local LLMs running via Ollama (specifically Qwen). The tool processes ChatGPT export files entirely locally, extracts meaningful domain knowledge, and packages it in formats optimized for the target platform.
+A privacy-focused, open-source tool for migrating your accumulated context from ChatGPT to other LLM platforms like Google Gemini or local models via Ollama. Break free from vendor lock-in while maintaining the personalized assistance you've built up over time.
 
-## Key Features
+## 🚀 Features
 
-- 🔒 **Privacy-First**: All processing happens locally; no data leaves your machine
-- 🔌 **Extensible Architecture**: Plugin-based adapters enable future platform support
-- 🎯 **Two Migration Paths**: 
-  - ChatGPT → Google Gemini (Saved Info)
-  - ChatGPT → Local LLMs via Ollama (Qwen Modelfile)
-- 📦 **Context Extraction**: Intelligently extracts projects, preferences, and technical background
-- 🎛️ **Selective Filtering**: Control what context is transferred with conversation and topic filters
-- 🔄 **Incremental Updates**: Keep your context current without re-exporting everything
-- ✅ **Validation Tools**: Generate test questions to verify successful context transfer
-- 💻 **CLI & Web Interface**: Use via command line or simple web UI
+- **🔒 Privacy-First**: All processing happens locally on your machine - no data leaves your computer
+- **🎯 Multiple Target Platforms**: Export to Gemini Gems or Ollama Modelfiles
+- **🧠 Intelligent Context Extraction**: Automatically identify projects, preferences, and technical expertise
+- **🎛️ Interactive Filtering**: Choose what context to include or exclude
+- **🔄 Incremental Updates**: Keep your context current without re-exporting everything
+- **✅ Validation Testing**: Verify successful context transfer with generated test questions
+- **🌐 Web Interface**: Simple browser-based interface for non-technical users
+- **⚡ CLI Tool**: Command-line interface for developers and power users
+- **🔐 Security Features**: Encryption, sensitive data detection, and secure deletion
+- **💰 Payment Integration**: Optional payment system for hosted web interface
 
-## Overview
+## Project Structure
 
-The LLM Context Exporter addresses vendor lock-in concerns by making personal context portable across different AI assistants. It processes official ChatGPT export files, extracts structured domain knowledge, and packages it in formats ready for your target platform.
-
-### How It Works
-
-1. **Parse**: Reads official ChatGPT export files (ZIP or JSON)
-2. **Extract**: Identifies projects, preferences, and technical context
-3. **Filter**: Allows selective inclusion/exclusion of content
-4. **Format**: Packages context for target platform (Gemini or Ollama)
-5. **Validate**: Generates test questions to verify transfer
-
-## Installation
-
-### Prerequisites
-
-- Python 3.10 or higher
-- (For Ollama output) Ollama installed and configured
-
-### Install from Source
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd llm-context-exporter
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Install the package
-pip install -e .
+```
+llm-context-exporter/
+├── src/llm_context_exporter/
+│   ├── core/                   # Core data models and processing logic
+│   │   ├── models.py          # Data structures (UniversalContextPack, etc.)
+│   │   ├── extractor.py       # Context extraction engine
+│   │   └── filter.py          # Filtering and selection engine
+│   │
+│   ├── parsers/               # Platform-specific input parsers
+│   │   ├── base.py           # Abstract parser interface
+│   │   └── chatgpt.py        # ChatGPT export parser
+│   │
+│   ├── formatters/            # Platform-specific output formatters
+│   │   ├── base.py           # Abstract formatter interface
+│   │   ├── gemini.py         # Gemini Gems formatter
+│   │   └── ollama.py         # Ollama Modelfile formatter
+│   │
+│   ├── validation/            # Validation test generation
+│   │   └── generator.py      # Test question generator
+│   │
+│   ├── security/              # Privacy and security features
+│   │   ├── encryption.py     # File encryption utilities
+│   │   ├── detection.py      # Sensitive data detection
+│   │   └── deletion.py       # Secure file deletion
+│   │
+│   ├── web/                   # Web interface components
+│   │   ├── app.py            # Flask application
+│   │   ├── payment.py        # Stripe payment processing
+│   │   └── beta.py           # Beta user management
+│   │
+│   └── cli/                   # Command-line interface
+│       └── main.py           # CLI implementation
+│
+├── tests/                     # Test suite
+│   ├── conftest.py           # Pytest fixtures
+│   └── test_models.py        # Model tests
+│
+├── requirements.txt           # Python dependencies
+├── setup.py                  # Package configuration
+├── pytest.ini               # Test configuration
+└── README.md                 # This file
 ```
 
-### Install from PyPI (when available)
+## 📦 Installation
+
+### Option 1: Install from PyPI (Recommended)
 
 ```bash
 pip install llm-context-exporter
 ```
 
-## Quick Start
-
-### Export to Gemini
+### Option 2: Install from Source
 
 ```bash
-llm-context-export \
-  --input chatgpt_export.zip \
-  --target gemini \
-  --output ./gemini_context.txt
+# Clone the repository
+git clone https://github.com/llm-context-exporter/llm-context-exporter.git
+cd llm-context-exporter
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Install in development mode
+pip install -e .
 ```
 
-This generates:
-- Formatted text ready to paste into Gemini Saved Info
-- Step-by-step instructions for adding to Gemini
-- Validation test questions
-
-### Export to Ollama
+### Option 3: Using pipx (Isolated Installation)
 
 ```bash
-llm-context-export \
-  --input chatgpt_export.zip \
-  --target ollama \
-  --model qwen \
-  --output ./ollama_modelfile
+pipx install llm-context-exporter
 ```
 
-This generates:
-- Ollama Modelfile with embedded system prompt
-- Setup commands to create your custom model
-- Test commands to verify context transfer
+### System Requirements
 
-### Interactive Filtering
+- **Python**: 3.10 or higher
+- **Operating System**: Windows, macOS, or Linux
+- **Memory**: At least 1GB RAM (more for large exports)
+- **Storage**: 100MB for installation + space for your exports
+
+### Optional Dependencies
+
+For **Ollama target platform**:
+```bash
+# Install Ollama (visit https://ollama.ai for platform-specific instructions)
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Pull the Qwen model (recommended)
+ollama pull qwen
+```
+
+For **development**:
+```bash
+pip install llm-context-exporter[dev,test]
+```
+
+## 🚀 Quick Start
+
+### Step 1: Export Your ChatGPT Data
+
+1. Go to [ChatGPT Settings](https://chat.openai.com/settings) → **Data Export**
+2. Click **"Export data"** and wait for the email
+3. Download the ZIP file when ready
+
+### Step 2: Choose Your Target Platform
 
 ```bash
-llm-context-export \
-  --input chatgpt_export.zip \
-  --target gemini \
-  --interactive
+# Compare platforms to help you decide
+llm-context-export compare
 ```
 
-Browse and select which conversations/topics to include or exclude.
+### Step 3: Export Your Context
 
-### Incremental Update
+**For Gemini (Cloud-based):**
+```bash
+llm-context-export export -i chatgpt_export.zip -t gemini -o ./gemini_output
+```
+
+**For Ollama (Local LLM):**
+```bash
+llm-context-export export -i chatgpt_export.zip -t ollama -o ./ollama_output
+```
+
+### Step 4: Use Your Exported Context
+
+**Gemini (Gems)**: 
+1. Go to [gemini.google.com](https://gemini.google.com) → Gem Manager (left sidebar)
+2. Click "New Gem"
+3. Paste contents of `gemini_gem_instructions.txt` into the Instructions field
+4. Save and start using your personalized Gem!
+
+**Ollama**: Create your custom model:
+```bash
+ollama create my-context -f ./ollama_output/Modelfile
+ollama run my-context
+```
+
+### Step 5: Validate the Transfer
 
 ```bash
-llm-context-export \
-  --input new_export.zip \
-  --target gemini \
-  --update ./previous_context \
-  --output ./updated_context
+llm-context-export validate -c ./output -t gemini --interactive
 ```
 
-Only processes new conversations since the last export.
+## 💻 Usage Examples
+
+### Basic Export
+```bash
+# Simple export to Gemini
+llm-context-export export -i chatgpt_export.zip -t gemini -o ./output
+
+# Export to Ollama with specific model (QWEN as an example)
+llm-context-export export -i chatgpt_export.zip -t ollama -m qwen -o ./output
+```
+
+### Interactive Mode
+```bash
+# Choose what to include/exclude interactively
+llm-context-export export -i chatgpt_export.zip -t gemini -o ./output --interactive
+```
+
+### Advanced Filtering
+```bash
+# Exclude specific topics and set minimum relevance
+llm-context-export export -i chatgpt_export.zip -t ollama -o ./output \
+  --exclude-topics "personal,private" --min-relevance 0.5
+```
+
+### Incremental Updates
+```bash
+# Add new conversations to existing context
+llm-context-export export -i new_export.zip -t gemini -o ./updated \
+  --update ./previous/context.json
+```
 
 ### Web Interface
-
 ```bash
-llm-context-export --web --port 8080
+# Start local web interface (great for non-technical users)
+llm-context-export web
+# Open http://localhost:8080 in your browser
 ```
 
-Open `http://localhost:8080` in your browser for a user-friendly interface.
-
-## Usage Examples
-
-### CLI Usage
-
-#### Basic Export to Gemini
-
+### Validation and Testing
 ```bash
-llm-context-export --input export.zip --target gemini --output context.txt
+# Generate validation questions
+llm-context-export validate -c ./output -t gemini
+
+# Interactive validation with step-by-step testing
+llm-context-export validate -c ./output -t gemini --interactive
 ```
 
-#### Export to Ollama with Custom Base Model
-
+### Compatibility Checking
 ```bash
-llm-context-export \
-  --input export.zip \
-  --target ollama \
-  --model llama2 \
-  --output ./my_context_modelfile
+# Check if your export file is compatible
+llm-context-export compatibility -f chatgpt_export.zip -t ollama
+
+# Check Ollama installation
+llm-context-export compatibility -t ollama
 ```
 
-#### Apply Filters via Config File
-
+### Delta Packages (Incremental Updates)
 ```bash
-llm-context-export \
-  --input export.zip \
-  --target gemini \
-  --filters filters.json \
-  --output context.txt
+# Generate package with only new information
+llm-context-export delta -c new_export.zip -p ./old_context.json -o ./delta
 ```
 
-#### Generate Validation Tests
+## 📋 Context Schema
 
-```bash
-llm-context-export \
-  --validate ./context.txt \
-  --target gemini
+The LLM Context Exporter uses a standardized **Universal Context Pack** format that's platform-agnostic and designed for maximum portability:
+
+```json
+{
+  "version": "1.0.0",
+  "created_at": "2024-01-15T10:30:00Z",
+  "source_platform": "chatgpt",
+  "user_profile": {
+    "role": "Senior Software Engineer",
+    "expertise_areas": ["Python", "Machine Learning", "Web Development"],
+    "background_summary": "Experienced full-stack developer with ML expertise"
+  },
+  "projects": [
+    {
+      "name": "E-commerce Platform",
+      "description": "Building a scalable e-commerce platform with microservices",
+      "tech_stack": ["Python", "FastAPI", "React", "PostgreSQL"],
+      "key_challenges": ["Performance optimization", "Payment integration"],
+      "current_status": "In production",
+      "relevance_score": 0.95
+    }
+  ],
+  "preferences": {
+    "coding_style": {"language": "Python", "style": "clean and readable"},
+    "communication_style": "Direct and technical",
+    "preferred_tools": ["VS Code", "Git", "Docker"],
+    "work_patterns": {"methodology": "Agile", "testing": "TDD"}
+  },
+  "technical_context": {
+    "languages": ["Python", "JavaScript", "SQL"],
+    "frameworks": ["FastAPI", "React", "TensorFlow"],
+    "tools": ["Docker", "Kubernetes", "Git"],
+    "domains": ["Web Development", "Machine Learning"]
+  }
+}
 ```
 
-### Library Usage
+### Schema Components
+
+- **User Profile**: Role, expertise areas, and background summary
+- **Projects**: Detailed project information with tech stacks and challenges
+- **Preferences**: Coding style, communication preferences, and work patterns
+- **Technical Context**: Languages, frameworks, tools, and domain expertise
+- **Metadata**: Version info, timestamps, and processing details
+
+## 🛠️ CLI Reference
+
+### Main Commands
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `export` | Export ChatGPT context to target platform | `llm-context-export export -i export.zip -t gemini -o ./output` |
+| `validate` | Generate validation tests | `llm-context-export validate -c ./output -t gemini` |
+| `compare` | Compare target platforms | `llm-context-export compare` |
+| `delta` | Generate incremental update package | `llm-context-export delta -c new.zip -p old.json -o ./delta` |
+| `web` | Start web interface | `llm-context-export web --port 8080` |
+| `compatibility` | Check platform compatibility | `llm-context-export compatibility -f export.zip -t ollama` |
+| `info` | Show platform information | `llm-context-export info --verbose` |
+| `examples` | Show usage examples | `llm-context-export examples` |
+
+### Export Command Options
+
+```bash
+llm-context-export export [OPTIONS]
+
+Options:
+  -i, --input PATH              ChatGPT export file (ZIP or JSON) [required]
+  -t, --target [gemini|ollama]  Target platform [required]
+  -o, --output PATH             Output directory [required]
+  -m, --model TEXT              Base model for Ollama (default: qwen)
+  --interactive                 Enable interactive filtering
+  --update PATH                 Previous context for incremental update
+  --exclude-conversations TEXT  Comma-separated conversation IDs to exclude
+  --exclude-topics TEXT         Comma-separated topics to exclude
+  --min-relevance FLOAT         Minimum relevance score (0.0-1.0)
+  --dry-run                     Preview without creating files
+  --help                        Show help message
+```
+
+### Admin Commands (Beta Management)
+
+```bash
+llm-context-export admin [COMMAND]
+
+Commands:
+  list-users                    List all beta users
+  add-user                      Add new beta user
+  remove-user                   Remove beta user
+  user-stats                    Show user statistics
+  feedback                      View feedback by rating
+  report                        Generate usage report
+```
+
+## 📚 Documentation
+
+### Complete Documentation
+For comprehensive guides and references, see our [documentation directory](docs/):
+
+- **[CLI Usage Guide](docs/CLI_USAGE_GUIDE.md)** - Complete command-line reference with examples
+- **[Library Usage Guide](docs/LIBRARY_USAGE.md)** - Python library integration and API reference  
+- **[Context Schema](docs/CONTEXT_SCHEMA.md)** - Universal Context Pack format specification
+- **[Admin Guide](docs/ADMIN_GUIDE.md)** - Beta user management and administration
+- **[Privacy Policy](docs/PRIVACY_POLICY.md)** - Data handling and privacy practices
+- **[Terms of Service](docs/TERMS_OF_SERVICE.md)** - Usage terms and conditions
+
+### Quick Library Example
 
 ```python
-from llm_context_exporter import ChatGPTParser, ContextExtractor, GeminiFormatter
+from llm_context_exporter import ExportHandler, ExportConfig
 
-# Parse ChatGPT export
-parser = ChatGPTParser()
-parsed = parser.parse_export("chatgpt_export.zip")
+# Simple export
+config = ExportConfig(
+    input_path="chatgpt_export.zip",
+    target_platform="gemini", 
+    output_path="./output"
+)
 
-# Extract context
-extractor = ContextExtractor()
-context_pack = extractor.extract_context(parsed.conversations)
+handler = ExportHandler()
+results = handler.export(config)
 
-# Format for Gemini
-formatter = GeminiFormatter()
-gemini_output = formatter.format_for_gemini(context_pack)
+if results["success"]:
+    print(f"Export completed! Files: {results['output_files']}")
+```
 
-# Use the output
-print(gemini_output.formatted_text)
-print(gemini_output.instructions)
+### Code Examples
+
+See the [examples directory](examples/) for comprehensive demonstrations:
+
+- **[library_usage_example.py](examples/library_usage_example.py)** - Complete library integration examples
+- **[transfer_examples.py](examples/transfer_examples.py)** - Successful vs unsuccessful transfer scenarios
+- **[admin_demo.py](examples/admin_demo.py)** - Beta user management examples
+- **[security_demo.py](examples/security_demo.py)** - Security features demonstration
+- **[validation_demo.py](examples/validation_demo.py)** - Validation test generation
+- **[payment_demo.py](examples/payment_demo.py)** - Payment system integration
+
+## ✅ Examples of Successful Transfers
+
+### What Transfers Well
+
+**Project Context:**
+```
+✅ "I'm building an e-commerce platform using FastAPI and React"
+✅ "The main challenge is handling payment processing with Stripe"
+✅ "We're using PostgreSQL for the database and Redis for caching"
+```
+
+**Technical Preferences:**
+```
+✅ "I prefer Python for backend development"
+✅ "I use VS Code with the Python extension"
+✅ "I follow TDD methodology and write tests first"
+```
+
+**Domain Expertise:**
+```
+✅ "I have experience with machine learning using TensorFlow"
+✅ "I'm familiar with Docker and Kubernetes deployment"
+✅ "I work primarily in web development and data science"
+```
+
+### What May Not Transfer Well
+
+**ChatGPT-Specific Features:**
+```
+❌ "Use the web browsing feature to check the latest React docs"
+❌ "Generate an image of a database schema"
+❌ "Run this code in the code interpreter"
+```
+
+**Temporal/Contextual References:**
+```
+❌ "As we discussed earlier in this conversation..."
+❌ "Based on the file you uploaded..."
+❌ "Following up on yesterday's question..."
+```
+
+**Personal/Sensitive Information:**
+```
+⚠️  "My API key is sk-1234567890abcdef..." (will be detected and redacted)
+⚠️  "My email is john@company.com" (will prompt for redaction)
+⚠️  "The database password is secret123" (will be flagged)
+```
+
+## 🧪 Testing
+
+### Run Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=src/llm_context_exporter --cov-report=html
+
+# Run specific test categories
+pytest -m "not integration"  # Unit tests only
+pytest -m integration        # Integration tests only
+pytest -k "test_parser"      # Parser tests only
+```
+
+### Property-Based Testing
+
+The project uses Hypothesis for property-based testing to ensure correctness:
+
+```bash
+# Run property-based tests
+pytest tests/test_*_properties.py
+
+# Run with more examples
+pytest --hypothesis-max-examples=1000
+```
+
+### Test Your Own Export
+
+```bash
+# Test compatibility of your ChatGPT export
+llm-context-export compatibility -f your_export.zip
+
+# Dry run to see what would be extracted
+llm-context-export export -i your_export.zip -t gemini -o ./test --dry-run
 ```
 
 ## Architecture
 
-The tool follows a pipeline architecture with clear separation of concerns:
+The project follows a modular architecture with clear separation of concerns:
 
-### Core Components
+- **Core Layer**: Platform-agnostic data models and processing logic
+- **Parser Layer**: Platform-specific input handling (ChatGPT, Claude, etc.)
+- **Formatter Layer**: Platform-specific output generation (Gemini, Ollama, etc.)
+- **Interface Layer**: CLI and web interfaces for user interaction
+- **Security Layer**: Privacy protection and secure file handling
 
-1. **Platform Parsers**: Convert platform-specific exports to a universal format
-   - `ChatGPTParser`: Parses official ChatGPT export files
+This design enables easy extension to support additional platforms in the future.
 
-2. **Context Extractor**: Analyzes conversations and extracts structured knowledge
-   - Project identification
-   - User profile extraction
-   - Preference detection
-   - Technical context extraction
+## 🔒 Privacy & Security
 
-3. **Universal Context Pack**: Platform-agnostic representation of user context
-   - UserProfile (role, expertise, background)
-   - ProjectBrief[] (projects with tech stack and status)
-   - UserPreferences (coding style, tools, patterns)
-   - TechnicalContext (languages, frameworks, domains)
+### Privacy-First Design
 
-4. **Filter Engine**: Selective content filtering
-   - Conversation exclusion
-   - Topic-based filtering
-   - Date range filtering
-   - Preference persistence
+- **🏠 Local Processing**: All data processing happens on your machine
+- **🚫 No Cloud Dependencies**: No data is sent to external services during processing
+- **🔐 Encryption at Rest**: Context files are encrypted when saved locally
+- **🕵️ Sensitive Data Detection**: Automatic detection and optional redaction of PII
+- **🗑️ Secure Deletion**: Multi-pass overwriting of temporary files
+- **📡 Network Monitoring**: Ensures no unexpected network activity during processing
 
-5. **Platform Formatters**: Convert universal context to platform-specific formats
-   - `GeminiFormatter`: Creates Gemini Saved Info text
-   - `OllamaFormatter`: Generates Ollama Modelfile
+### What We Collect (Web Interface Only)
 
-6. **Validation Generator**: Creates test questions to verify context transfer
+**CLI Tool**: Collects no data whatsoever.
 
-### Extensibility
+**Web Interface** (if you use the hosted version):
+- **Payment Information**: Processed by Stripe (we never see your credit card details)
+- **Usage Statistics**: Number of exports, file sizes (for beta users only)
+- **Feedback**: Optional feedback you provide (beta users only)
+- **No Personal Data**: We don't store your ChatGPT conversations or extracted context
 
-The architecture supports adding new platforms through adapter interfaces:
+### Data Retention
 
-- **Adding Source Platforms**: Implement `PlatformParser` interface
-- **Adding Target Platforms**: Implement `PlatformFormatter` interface
+- **Local Files**: You control all local files and can delete them anytime
+- **Web Interface**: Session data is automatically deleted after 1 hour
+- **Payment Records**: Handled by Stripe according to their retention policy
+- **Beta Feedback**: Stored until beta program ends, then deleted
 
-See the [Design Document](.kiro/specs/llm-context-exporter/design.md#extensibility-points) for detailed adapter interface documentation.
+### Security Measures
 
-## Privacy & Security
+- **AES-256-GCM Encryption**: Military-grade encryption for stored context files
+- **PBKDF2 Key Derivation**: Secure password-based encryption keys
+- **Sensitive Data Patterns**: Detects 15+ types of sensitive information
+- **Network Isolation**: Monitors and prevents unexpected network calls
+- **Secure File Deletion**: Multi-pass overwriting prevents data recovery
 
-### Local-Only Processing
+## 📜 Terms of Service
 
-✅ All processing happens entirely on your machine  
-✅ No network requests made during export processing  
-✅ No data transmitted to external services (except payment processing via Stripe for web interface)
+### Acceptable Use
 
-### Data Protection
+✅ **Allowed:**
+- Export your own ChatGPT conversation data
+- Use for personal context migration
+- Integrate into your own projects (open source)
+- Modify and distribute (subject to license)
 
-- **Encryption**: Context packages can be encrypted at rest using AES-256-GCM
-- **Sensitive Data Detection**: Prompts for redaction of detected sensitive information (emails, API keys, etc.)
-- **Secure Deletion**: Overwrites files before deletion
+❌ **Not Allowed:**
+- Export other people's conversation data without permission
+- Use for commercial data harvesting
+- Attempt to reverse-engineer ChatGPT's algorithms
+- Violate any platform's terms of service
 
-### Web Interface Security
+### Disclaimers
 
-- Runs on localhost only (127.0.0.1) by default
-- Session-based file storage with auto-cleanup
-- CSRF protection
-- Rate limiting
+- **No Warranty**: Software provided "as is" without warranty
+- **Platform Changes**: Target platforms may change their APIs/features
+- **Context Quality**: Results depend on your conversation content quality
+- **Compatibility**: We can't guarantee compatibility with all export formats
 
-## Data Models
+### Liability
 
-### Universal Context Pack
+- **Your Responsibility**: You're responsible for your data and its use
+- **Platform Compliance**: Ensure you comply with target platform terms
+- **Data Accuracy**: We don't guarantee perfect context extraction
+- **Service Availability**: Web interface availability not guaranteed
 
-The core data structure representing portable user context:
+## 🤝 Contributing
 
-```python
-UniversalContextPack:
-  - version: str
-  - created_at: datetime
-  - user_profile: UserProfile
-  - projects: List[ProjectBrief]
-  - preferences: UserPreferences
-  - technical_context: TechnicalContext
-  - metadata: Dict[str, Any]
-```
+We welcome contributions! Here's how to get started:
 
-See the [Design Document](.kiro/specs/llm-context-exporter/design.md#data-models) for complete schema definitions.
-
-## Platform Comparison
-
-### Gemini (Cloud)
-
-**Pros:**
-- Easy to use (paste text into Saved Info)
-- Accessible from anywhere
-- Powerful model capabilities
-
-**Cons:**
-- Context stored in the cloud
-- Limited size (~32KB practical limit)
-- Requires Google account
-
-### Ollama (Local)
-
-**Pros:**
-- Complete privacy (runs on your machine)
-- No size limits for system prompts
-- No internet required after setup
-- Full control over the model
-
-**Cons:**
-- Requires installation and setup
-- Requires adequate hardware (RAM, storage)
-- May have different capabilities than cloud models
-
-## Limitations & Disclaimers
-
-- **Platform Differences**: Target LLMs may interpret context differently than ChatGPT
-- **Format Changes**: ChatGPT export format changes may require tool updates
-- **Feature Gaps**: Some ChatGPT-specific features may not transfer
-- **Context Interpretation**: Success depends on how well the target LLM understands the formatted context
-
-The tool logs what was skipped and why, helping you understand what might not transfer.
-
-## Testing & Validation
-
-### Property-Based Testing
-
-The project uses property-based testing (Hypothesis) to ensure correctness across a wide range of inputs. Key properties tested include:
-
-- Parse preservation
-- Schema conformance
-- Filter correctness
-- Local-only processing guarantees
-
-### Validation Questions
-
-After export, the tool generates test questions to verify successful context transfer:
+### Development Setup
 
 ```bash
-llm-context-export --validate ./context.txt --target gemini
+# Clone the repository
+git clone https://github.com/llm-context-exporter/llm-context-exporter.git
+cd llm-context-exporter
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install development dependencies
+pip install -e ".[dev,test]"
+
+# Install pre-commit hooks
+pre-commit install
+
+# Run tests to verify setup
+pytest
 ```
 
-## Contributing
+### Contribution Guidelines
 
-Contributions are welcome! The project follows these principles:
+1. **Fork** the repository
+2. **Create** a feature branch: `git checkout -b feature/amazing-feature`
+3. **Write** tests for your changes
+4. **Ensure** all tests pass: `pytest`
+5. **Format** code: `black src tests && isort src tests`
+6. **Commit** changes: `git commit -m "Add amazing feature"`
+7. **Push** to branch: `git push origin feature/amazing-feature`
+8. **Open** a Pull Request
 
-- **Open Source Core**: All core functionality is open-source
-- **Extensible Architecture**: Clear interfaces for adding new platforms
-- **Privacy-First**: All code must be auditable for local-only processing
-- **Comprehensive Testing**: Property-based tests for correctness guarantees
+### Areas for Contribution
 
-### Adding New Platforms
+- **New Platform Adapters**: Add support for Claude, Perplexity, etc.
+- **Enhanced Context Extraction**: Improve project and preference detection
+- **UI/UX Improvements**: Better web interface design
+- **Documentation**: Tutorials, guides, and examples
+- **Testing**: More test coverage and edge cases
+- **Performance**: Optimization for large exports
 
-1. **Source Platform**: Implement `PlatformParser` interface
-2. **Target Platform**: Implement `PlatformFormatter` interface
+## 🐛 Troubleshooting
 
-See the [Design Document](.kiro/specs/llm-context-exporter/design.md#extensibility-points) for detailed instructions.
+### Common Issues
 
-## Documentation
+**"Export file not found"**
+```bash
+# Check file path and permissions
+ls -la your_export.zip
+llm-context-export compatibility -f your_export.zip
+```
 
-- **[Requirements](.kiro/specs/llm-context-exporter/requirements.md)**: Detailed functional requirements
-- **[Design Document](.kiro/specs/llm-context-exporter/design.md)**: Architecture and implementation details
-- **[Implementation Plan](.kiro/specs/llm-context-exporter/tasks.md)**: Development roadmap
+**"Ollama not found"**
+```bash
+# Install Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
 
-## License
+# Verify installation
+ollama --version
+ollama pull qwen
+```
 
-[License to be specified - open source license permitting commercial use]
+**"Permission denied"**
+```bash
+# Check output directory permissions
+mkdir -p ./output
+chmod 755 ./output
+```
 
-## Support
+**"Context too large"**
+```bash
+# Use filtering to reduce size
+llm-context-export export -i export.zip -t gemini -o ./output \
+  --min-relevance 0.7 --exclude-topics "personal,casual"
+```
 
-- **Issues**: Report bugs or request features on GitHub
-- **CLI Help**: `llm-context-export --help`
-- **Documentation**: See `.kiro/specs/llm-context-exporter/` for detailed specs
+### Getting Help
 
-## Roadmap
+- **Documentation**: Check this README and `llm-context-export --help`
+- **Examples**: Run `llm-context-export examples`
+- **Issues**: [GitHub Issues](https://github.com/llm-context-exporter/llm-context-exporter/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/llm-context-exporter/llm-context-exporter/discussions)
 
-### v1.0 (Current)
+## 📊 Beta Program
 
-- ✅ ChatGPT export parsing
-- ✅ Context extraction
-- ✅ Gemini formatter
-- ✅ Ollama formatter
-- ✅ CLI interface
-- ✅ Web interface
-- ✅ Filtering & selection
-- ✅ Incremental updates
-- ✅ Validation tools
+Interested in early access to new features? Join our beta program!
 
-### Future Considerations
+### Beta Benefits
 
-- Support for more source platforms (Claude, Perplexity, etc.)
-- Support for more target platforms
-- Context compression and summarization
-- Automatic sync/update scheduling
-- Multi-user/team context sharing
+- **Free Access**: No payment required for web interface
+- **Early Features**: Access to new features before public release
+- **Direct Feedback**: Help shape the product development
+- **Priority Support**: Faster response to issues and questions
+
+### How to Join
+
+1. **Email us**: Send a request to beta@llm-context-exporter.com
+2. **Include**: Brief description of your use case
+3. **Get Access**: We'll add you to the beta whitelist
+4. **Provide Feedback**: Help us improve the tool
+
+### Beta User Responsibilities
+
+- **Test Features**: Try new functionality and report issues
+- **Provide Feedback**: Share your experience and suggestions
+- **Report Bugs**: Help us identify and fix problems
+- **Respect Privacy**: Don't share beta features publicly
+
+## 📈 Roadmap
+
+### v1.0: Core Functionality ✅
+- [x] ChatGPT export parsing
+- [x] Context extraction and filtering
+- [x] Gemini Gems and Ollama formatters
+- [x] CLI interface
+- [x] Security features
+- [x] Validation testing
+- [x] Web interface
+- [x] Payment integration
+- [x] Beta user management
+
+### v1.1: Stability & Claude Support 🚧
+- [ ] **Claude export support** - Import from Anthropic Claude conversations
+- [ ] **Web service stability** - Improved session handling and error recovery
+- [ ] **Easy deployment** - One-click hosting options for self-hosted instances
+- [ ] **Docker support** - Simple `docker-compose up` deployment
+- [ ] Advanced filtering options
+- [ ] Context analytics dashboard
+
+### v1.2: Platform Expansion 📋
+- [ ] Perplexity export support
+- [ ] Anthropic Claude target
+- [ ] OpenAI Assistant API target
+- [ ] Custom LLM targets
+- [ ] Batch processing
+
+### v2.0: Advanced Features 🔮
+- [ ] Team collaboration features
+- [ ] Context sharing and templates
+- [ ] API for third-party integrations
+- [ ] Context version control
+- [ ] Multi-platform sync
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+### What this means:
+- ✅ **Commercial use** allowed
+- ✅ **Modification** allowed
+- ✅ **Distribution** allowed
+- ✅ **Private use** allowed
+- ❌ **No warranty** provided
+- ❌ **No liability** accepted
+
+## 🙏 Acknowledgments
+
+- **OpenAI** for ChatGPT and the inspiration for context portability
+- **Google** for Gemini and the Saved Info feature
+- **Ollama Team** for making local LLMs accessible
+- **Open Source Community** for the amazing tools and libraries
+- **Beta Testers** for their valuable feedback and bug reports
+
+### Built With
+
+- **[Pydantic](https://pydantic.dev/)** - Data validation and parsing
+- **[Click](https://click.palletsprojects.com/)** - Command-line interface
+- **[Rich](https://rich.readthedocs.io/)** - Beautiful terminal output
+- **[Flask](https://flask.palletsprojects.com/)** - Web interface
+- **[Stripe](https://stripe.com/)** - Payment processing
+- **[Cryptography](https://cryptography.io/)** - Security and encryption
+- **[Hypothesis](https://hypothesis.readthedocs.io/)** - Property-based testing
+
+## 📞 Contact
+
+- **Website**: [llm-context-exporter.com](https://llm-context-exporter.com)
+- **Email**: contact@llm-context-exporter.com
+- **GitHub**: [llm-context-exporter/llm-context-exporter](https://github.com/llm-context-exporter/llm-context-exporter)
+- **Issues**: [Report a Bug](https://github.com/llm-context-exporter/llm-context-exporter/issues)
+- **Discussions**: [Community Forum](https://github.com/llm-context-exporter/llm-context-exporter/discussions)
+
+---
+
+**Made with ❤️ for the AI community**
+
+*Break free from vendor lock-in. Your context, your choice.*

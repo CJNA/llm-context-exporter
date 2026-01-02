@@ -1,0 +1,103 @@
+# Render.com deployment configuration for LLM Context Exporter
+
+services:
+  # Main web service
+  - type: web
+    name: llm-context-exporter
+    env: python
+    plan: starter  # Can be upgraded to standard or pro
+    buildCommand: |
+      pip install -r requirements.txt
+      pip install -e .
+    startCommand: |
+      gunicorn --config deployment/config/gunicorn.conf.py llm_context_exporter.web.app:create_app()
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+      - key: REDIS_PASSWORD
+        generateValue: true
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: STRIPE_SECRET_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false  # Set manually in Render dashboard
+      - key: STRIPE_PRICE_ID
+        sync: false  # Set manually in Render dashboard
+      - key: MAX_CONTENT_LENGTH
+        value: 524288000
+      - key: SESSION_TIMEOUT_HOURS
+        value: 1
+      - key: ENFORCE_HTTPS
+        value: true
+      - key: BETA_PROGRAM_ENABLED
+        value: true
+      - key: RATE_LIMIT_PER_HOUR
+        value: 100
+      - key: UPLOAD_RATE_LIMIT_PER_HOUR
+        value: 10
+      - key: LOG_LEVEL
+        value: INFO
+    healthCheckPath: /health
+    
+  # PostgreSQL database
+  - type: pserv
+    name: llm-context-postgres
+    env: postgresql
+    plan: starter
+    ipAllowList: []  # Only accessible by services in this account
+    
+  # Redis cache
+  - type: pserv
+    name: llm-context-redis
+    env: redis
+    plan: starter
+    ipAllowList: []  # Only accessible by services in this account
+
+databases:
+  - name: llm_context_exporter
+    databaseName: llm_context_exporter
+    user: llm_user
+
+# Environment-specific configurations
+environments:
+  production:
+    services:
+      - type: web
+        name: llm-context-exporter
+        plan: standard  # Upgrade for production
+        scaling:
+          minInstances: 2
+          maxInstances: 10
+        envVars:
+          - key: BACKUP_ENABLED
+            value: true
+          - key: BACKUP_RETENTION_DAYS
+            value: 30
+          - key: SMTP_SERVER
+            sync: false  # Configure in dashboard
+          - key: SMTP_USERNAME
+            sync: false
+          - key: SMTP_PASSWORD
+            sync: false
+          - key: FROM_EMAIL
+            sync: false
+            
+  staging:
+    services:
+      - type: web
+        name: llm-context-exporter-staging
+        plan: starter
+        envVars:
+          - key: BETA_PROGRAM_ENABLED
+            value: true
+          - key: STRIPE_PUBLISHABLE_KEY
+            value: pk_test_...  # Test key
+          - key: STRIPE_SECRET_KEY
+            sync: false  # Test key, set in dashboard
