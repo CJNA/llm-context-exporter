@@ -643,13 +643,10 @@ Interested in early access to new features? Join our beta program!
 - [x] CLI interface
 - [x] Security features
 - [x] Validation testing
-- [x] Web interface
-- [x] Payment integration
 - [x] Beta user management
 
 ### v1.1: Stability & Claude Support 🚧
 - [ ] **Claude export support** - Import from Anthropic Claude conversations
-- [ ] **Web service stability** - Improved session handling and error recovery
 - [ ] **Easy deployment** - One-click hosting options for self-hosted instances
 - [ ] **Docker support** - Simple `docker-compose up` deployment
 - [ ] Advanced filtering options
@@ -662,12 +659,16 @@ Interested in early access to new features? Join our beta program!
 - [ ] Custom LLM targets
 - [ ] Batch processing
 
-### v2.0: Advanced Features 🔮
+### v2.0: Web Interface 🔮
+- [ ] Web interface
 - [ ] Team collaboration features
 - [ ] Context sharing and templates
 - [ ] API for third-party integrations
 - [ ] Context version control
 - [ ] Multi-platform sync
+
+### v2.1: Web Service Stability 📋
+- [ ] **Web service stability** - Improved session handling and error recovery
 
 ## 📄 License
 
