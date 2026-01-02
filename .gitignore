@@ -160,9 +160,13 @@ cython_debug/
 
 # Project-specific ignores
 *.zip
-*.json
 exports/
+
+# Generated output folders
+gemini_output/
 gemini-output/
+ollama_output/
+ollama-output/
 output/
 temp/
 .llm_context_exporter_filters.json
