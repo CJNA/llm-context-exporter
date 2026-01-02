@@ -627,8 +627,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 📞 Contact
 
-- **Website**: [llm-context-exporter.com](https://llm-context-exporter.com)
-- **Email**: contact@llm-context-exporter.com
+- Reach out to me directly via GH DM.
 - **GitHub**: [llm-context-exporter/llm-context-exporter](https://github.com/llm-context-exporter/llm-context-exporter)
 - **Issues**: [Report a Bug](https://github.com/llm-context-exporter/llm-context-exporter/issues)
 - **Discussions**: [Community Forum](https://github.com/llm-context-exporter/llm-context-exporter/discussions)
